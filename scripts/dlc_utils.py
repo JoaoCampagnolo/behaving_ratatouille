@@ -6,6 +6,26 @@
 
 # Import packages
 import os
+import re
+
+def browse_files(root_dir, extension='.pkl', tag='\d{6}_\d{1}'):
+    '''
+    The idea is to browse a root directory for folders whose names follow a given format (tag), 
+    in case they hold files with the desired extension. Returns a dictionary with every 
+    aninal/experiment/directory/files.
+    '''
+    ntag = re.compile(tag)
+    experiments = {'Animal':[],'Trial':[],'Directory':[],'Files':[]}
+    for root, dirs, files in os.walk(root_dir, topdown=True):
+        for name in dirs:
+            if ntag.match(name) is not None:
+                if any([fname.endswith(extension) for fname in os.listdir(os.path.join(root, name))]):
+                    experiments['Animal'].append(name.split('_')[0])
+                    experiments['Trial'].append(name.split('_')[1])
+                    experiments['Directory'].append(os.path.join(root, name))
+                    experiments['Files'].append([os.path.join(os.path.join(root, name), file) 
+                                                 for file in os.listdir(os.path.join(root, name)) if file.endswith(extension)])
+    return experiments
 
 def find_videos(root_dir, extension='.avi'):
     '''
