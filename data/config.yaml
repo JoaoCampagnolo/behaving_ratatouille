@@ -1,0 +1,132 @@
+# Project definitions (do not edit)
+Task: KI2020_Training
+scorer: Valter
+date: Sep19
+
+# Project path (change when moving around)
+project_path: /home/titan/KI2020/DLC/KI2020_Training-Valter-2020-09-19
+
+# Annotation data set configuration (and individual video cropping parameters)
+video_sets:
+  /home/titan/KI2020/DLC/Videos_for_Valter/20200918_behaviour2020_v_286_backgroumfgray_1_recording.avi:
+    crop: 0, 448, 0, 448
+  /home/titan/KI2020/DLC/Videos_for_Valter/20200918_behaviour2020_v_286_gray2_1_recording.avi:
+    crop: 0, 448, 0, 448
+  /home/titan/KI2020/DLC/Videos_for_Valter/20200918_behaviour2020_v_287_gray1_1_recording.avi:
+    crop: 0, 448, 0, 448
+  /home/titan/KI2020/DLC/Videos_for_Valter/20200918_behaviour2020_v_286_gray5_1_recording.avi:
+    crop: 0, 448, 0, 448
+  /home/titan/KI2020/DLC/Videos_for_Valter/20200918_behaviour2020_v_288_gray3_1_recording.avi:
+    crop: 0, 448, 0, 448
+  /home/titan/KI2020/DLC/Videos_for_Valter/20200918_behaviour2020_v_288_gray2_1_recording.avi:
+    crop: 0, 448, 0, 448
+  /home/titan/KI2020/DLC/Videos_for_Valter/20200918_behaviour2020_v_288_gray5_1_recording.avi:
+    crop: 0, 448, 0, 448
+  /home/titan/KI2020/DLC/Videos_for_Valter/20200918_behaviour2020_v_244 gray3_1_recording.avi:
+    crop: 0, 448, 0, 448
+  /home/titan/KI2020/DLC/Videos_for_Valter/20200918_behaviour2020_v_288_gray4_1_recording.avi:
+    crop: 0, 448, 0, 448
+  /home/titan/KI2020/DLC/Videos_for_Valter/20200918_behaviour2020_v_286_gray3_1_recording.avi:
+    crop: 0, 448, 0, 448
+  /home/titan/KI2020/DLC/Videos_for_Valter/20200918_behaviour2020_v_286_gray1_1_recording.avi:
+    crop: 0, 448, 0, 448
+  /home/titan/KI2020/DLC/Videos_for_Valter/20200918_behaviour2020_v_244 gray1 backgrounf_1_recording.avi:
+    crop: 0, 448, 0, 448
+  /home/titan/KI2020/DLC/Videos_for_Valter/20200918_behaviour2020_v_288_backgroundgray_1_recording.avi:
+    crop: 0, 448, 0, 448
+  /home/titan/KI2020/DLC/Videos_for_Valter/20200918_behaviour2020_v_286_gray4_1_recording.avi:
+    crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/DLC/KI2020_Training-Valter-2020-09-19/videos/20200909_behaviour2020_v_295_6intensity_10on_15off_50pulses_1_recording.avi
+  : crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/DLC/KI2020_Training-Valter-2020-09-19/videos/20200909_behaviour2020_v_295_675intensity_10on_90off_20pulses_1_recording.avi
+  : crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/DLC/KI2020_Training-Valter-2020-09-19/videos/20200909_behaviour2020_v_297_7intensity_10on_15off_50pulses_1_recording.avi
+  : crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/DLC/KI2020_Training-Valter-2020-09-19/videos/20200909_behaviour2020_v_295_10intensity_20on_5off_50pulses_1_recording.avi
+  : crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/DLC/KI2020_Training-Valter-2020-09-19/videos/20200909_behaviour2020_v_295_intensity65_15on_10off_50pulses_1_recording.avi
+  : crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/DLC/KI2020_Training-Valter-2020-09-19/videos/20200909_behaviour2020_v_295_150n_10off_7intensity_1_recording.avi
+  : crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/DLC/KI2020_Training-Valter-2020-09-19/videos/20200909_behaviour2020_v_295_65intensity_5on_5off_100pulses_1_recording.avi
+  : crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/DLC/KI2020_Training-Valter-2020-09-19/videos/20201126_behaviour2020_v_2508_red_10mw_10on_15off_40hz_1sec_dark_1_recording.avi
+  : crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/ExperimentalResults/for_stiring_comitte/20200929/20200929_behaviour2020_v_295_10intensity_10on_50hz_1/20200929_behaviour2020_v_295_10intensity_10on_50hz_1_recording.avi
+  : crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/ExperimentalResults/for_stiring_comitte/20201022/20201022_behaviour2020_v_6287_10mw_15on_40hz_dark_coc_3rdtimeisthecharm_1/20201022_behaviour2020_v_6287_10mw_15on_40hz_dark_coc_3rdtimeisthecharm_1_recording.avi
+  : crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/ExperimentalResults/for_stiring_comitte/20201117/20201117_behaviour2020_v_6287_both_blue_10mw_15on_40hz_40pulses_red_2son_1/20201117_behaviour2020_v_6287_both_blue_10mw_15on_40hz_40pulses_red_2son_1_recording.avi
+  : crop: 0, 448, 0, 370
+  ? /home/titan/KI2020/ExperimentalResults/20200909/Mouse_295_10intensity_20on_5off_50pulses/20200909_behaviour2020_v_295_10intensity_20on_5off_50pulses_1/20200909_behaviour2020_v_295_10intensity_20on_5off_50pulses_1_recording.avi
+  : crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/ExperimentalResults/20201218/Mouse_1300_stim1_10mw/20201218_behaviour2020_v_1300_stim1_10mw_1/20201218_behaviour2020_v_1300_stim1_10mw_1_recording.avi
+  : crop: 0, 448, 0, 448
+  /home/titan/KI2020/DLC/KI2020_Training-Valter-2020-09-19/videos/20201217_behaviour2020_v_1301_stim1_10mw_1_recording.avi:
+    crop: 0, 448, 0, 448
+  /home/titan/KI2020/DLC/KI2020_Training-Valter-2020-09-19/videos/20201217_behaviour2020_v_1280_stim1_10mw_1_recording.avi:
+    crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/DLC/KI2020_Training-Valter-2020-09-19/videos/20201216_behaviour2020_v_6287_BOTH_LASERS_STIM1_OPENFIELS_1_recording.avi
+  : crop 0, 448, 0, 448
+  ? /home/titan/KI2020/ExperimentalResults/20201218/Mouse_2712_stim1_10mw_red/20201218_behaviour2020_v_2712_stim1_10mw_red_1/20201218_behaviour2020_v_2712_stim1_10mw_red_1_recording.avi
+  : crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/ExperimentalResults/20201219/Mouse_dlctest/20201219_behaviour2020_v_dlctest_1/20201219_behaviour2020_v_dlctest_1_recording.avi
+  : crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/ExperimentalResults/20201211/Mouse_1276_MAX_POWER_STIM1_DARK/20201211_behaviour2020_v_1276_MAX_POWER_STIM1_DARK_1/20201211_behaviour2020_v_1276_MAX_POWER_STIM1_DARK_1_recording.avi
+  : crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/ExperimentalResults/20201211/Mouse_1301_maxpower_stim2_dark/20201211_behaviour2020_v_1301_maxpower_stim2_dark_1/20201211_behaviour2020_v_1301_maxpower_stim2_dark_1_recording.avi
+  : crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/ExperimentalResults/20201211/Mouse_2715_red_stim2_maxpower_dark/20201211_behaviour2020_v_2715_red_stim2_maxpower_dark_1/20201211_behaviour2020_v_2715_red_stim2_maxpower_dark_1_recording.avi
+  : crop: 0, 448, 0, 448
+  ? /home/titan/KI2020/ExperimentalResults/20210115/Mouse_3913_stim1_10mw/20210115_behaviour2020_v_3913_stim1_10mw_1/20210115_behaviour2020_v_3913_stim1_10mw_1_recording.avi
+  : crop: 0, 448, 0, 448
+bodyparts:
+- snout
+- left ear
+- right ear
+- tail
+start: 0
+stop: 1
+numframes2pick: 10
+
+# Plotting configuration
+skeleton:
+- - snout
+  - left ear
+- - snout
+  - right ear
+- - left ear
+  - right ear
+- - left ear
+  - tail
+- - right ear
+  - tail
+skeleton_color: white
+pcutoff: 0.9
+dotsize: 2
+alphavalue: 0.7
+colormap: jet
+
+# Training,Evaluation and Analysis configuration
+TrainingFraction:
+- 0.8
+iteration: 3
+resnet:
+snapshotindex: -3
+batch_size: 1
+
+# Cropping Parameters (for analysis and outlier frame detection)
+cropping: true
+#if cropping is true for analysis, then set the values here:
+x1: 0
+x2: 448
+y1: 0
+y2: 370
+
+# Refinement configuration (parameters from annotation dataset configuration also relevant in this stage)
+corner2move2:
+- 50
+- 50
+move2corner: true
+default_net_type: resnet_50
+default_augmenter: default
