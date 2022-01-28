@@ -13,13 +13,13 @@
 import numpy as np
 import time
 from util import get_time
+from dim_reduction_util import kld
+from scipy.stats import entropy
 from enum import Enum
-
 from sklearn.metrics import pairwise_distances
 from scipy.spatial.distance import pdist
 import tensorflow as tf
 from tensorflow.keras import layers
-
 from sklearn.decomposition import PCA
 from sklearn.decomposition import KernelPCA
 from sklearn.manifold import TSNE
@@ -27,6 +27,7 @@ from parametric_tsne import ParametricTSNE
 from par_tsne_core import Parametric_tSNE
 from sklearn.manifold import Isomap
 import umap
+from segmentation_tools import *
 # from umap.parametric_umap import ParametricUMAP, load_ParametricUMAP
 
 
@@ -47,15 +48,17 @@ class DimReduction():
     
     def __init__(self, train_data, test_data, technique, embed_test=False, components=2, kpca_kernel='sigmoid',
                  kpca_gamma=None, kpca_kernel_degre=3, solver='auto', n_iter=1000, random_state=None, tsne_perplexity=30,
-                 n_iter_without_progress=100, init='random', learning_rate=200.0, metric='euclidean', verbose=0,
+                 n_iter_without_progress=100, init='random', learning_rate=200.0, metric='euclidean', verbose=0, n_jobs=1,
                  min_grad_norm=1e-07, method='barnes_hut', angle=0.5, early_exaggeration=12.0, ismp_nn=5, ismp_toler=0,
                  ismp_path='auto', ismp_nb_alg='auto', umap_rd_st=42, umap_nn=15, umap_min_dst=0.1, umap_epochs=None, d0=10,
                  d1=100, d2=2, pumap_save_embed=False, save_embed_path=None, pumap_load_embed=False, load_embed_path=None,
-                 par_tsne_alpha=1.0, par_tsne_opt='adam', part_tsne_batch_sz=64, par_tsne_seed=0):
+                 par_tsne_alpha=1.0, par_tsne_opt='adam', part_tsne_batch_sz=64, par_tsne_seed=0, make_trainset=False,
+                 square_distances=True):
         
         self.train_data = train_data
         self.test_data = test_data
         self.technique = technique
+        self.make_trainset = make_trainset
         self.embed_algs = ['kernel_PCA', 't_SNE', 'Par_tsne', 'Par_tsne2', 'Isomap', 'Umap', 'Par_Umap', 'PCA']
         
         # Parameter dictionary
@@ -65,9 +68,10 @@ class DimReduction():
                        
                        't_SNE': {'n_components':components, 'perplexity':tsne_perplexity,
                                  'early_exaggeration':early_exaggeration, 'learning_rate':learning_rate, 'n_iter':n_iter, 
-                                 'n_iter_without_progress':n_iter_without_progress,
+                                 'n_iter_without_progress':n_iter_without_progress, 'n_jobs':n_jobs,
                                  'min_grad_norm': min_grad_norm, 'metric':metric, #or euclidean or 'precomputed' or 'cosine'
-                                 'init':init, 'verbose':verbose, 'random_state':random_state, 'method':method, 'angle':angle},
+                                 'init':init, 'verbose':verbose, 'random_state':random_state, 'method':method, 'angle':angle,
+                                 'square_distances':square_distances},
                        
                        'Par_tsne':{'n_components':components, 'perplexity':tsne_perplexity, 
                                    'n_iter':n_iter, 'verbose':verbose},
@@ -94,6 +98,15 @@ class DimReduction():
         # Embedding dictionary
         self.embedding_dict = {} 
         
+        # Create a training set for parametric embeddings: 
+        # Approach: divide and conquer - split the fully preprocessed datasets into tranches and perform 
+        # a preliminary embedding of tranches of the data. Then yield a representative set of points from
+        # each tranche. Combine the sets from all tranches to get the complete training set. Embed the 
+        # the training set with a parametric embedding technique. Finally, embed the remaining dataset
+        # with the parametrized embedder.
+        #if self.make_trainset:
+             
+        
         # Kernel PCA
         if self.technique == _Dim_red_alg.kernel_PCA.value:
             print(f'Performing kernel PCA with parameters: {self.params["kernel_PCA"]}')
@@ -106,6 +119,10 @@ class DimReduction():
         # t-SNE
         if self.technique == _Dim_red_alg.t_SNE.value:
             print(f'Performing t-SNE with parameters: {self.params["t_SNE"]}')
+            if metric == 'kld':
+                self.params['t_SNE']['metric'] = kld
+            if metric == 'entropy':
+                self.params['t_SNE']['metric'] = entropy            
             tsne = TSNE(**self.params['t_SNE'])
             self.data_embed = tsne.fit_transform(np.transpose(self.train_data))
             self.embedding_dict['Embed_technique'] = 't_SNE'

@@ -22,6 +22,7 @@ from skimage.morphology import disk
 from skimage.filters.rank import gradient
 import random
 import hdbscan
+from segmentation_tools import *
 
 
 
@@ -108,11 +109,11 @@ class Segmentation():
             self.model_fit = self.classifier.fit(self.data)
             self.clust_labels = self.classifier.predict(self.data)
             self.num_clust = max(self.clust_labels)+1
-            print(f'Number of clusters: {self.num_clust}')
             self.post_proba = self.classifier.predict_proba(self.data)
             self.score = self.classifier.score(self.data)
             self.bic = self.classifier.bic(self.data)
             self.aic = self.classifier.aic(self.data)
+            print(f'Number of clusters: {self.num_clust}')
             self.clustering_dict['Clust_technique'] = 'GMM'
             self.clustering_dict['Parameters'] = self.params['GMM']
             self.clustering_dict['Data'] = {'Frame_cluster':self.clust_labels, 'AIC':self.aic, 'BIC':self.bic}
@@ -143,8 +144,9 @@ class Segmentation():
         # Hierarchical Aglomerative Clustering
         if self.technique == _Clust_alg.HAC.value:
             print(f'Performing HAC clustering with parameters: {self.params["HAC"]}')
-            clusterer = AgglomerativeClustering().fit(self.data)
-            self.clust_labels = clusterer.labels_
+            self.classifier = AgglomerativeClustering(**self.params['HAC'])
+            self.model_fit = classifier.fit(self.data)
+            self.clust_labels = model_fit.labels_
             self.num_clust = max(self.clust_labels)+1
             print(f'Number of clusters: {self.num_clust}')
             self.clustering_dict['Clust_technique'] = 'HAC'
@@ -193,7 +195,7 @@ class Segmentation():
             for x in range(np.shape(mesh)[1]):
                 frames = self.pix_to_point_idx[(x,y)]
                 for i in range(len(frames)):
-                    labels[frames[i]] = clust_labels[x,y]
+                    labels[frames[i]] = self.clust_labels[x,y]
         return labels
                 
     

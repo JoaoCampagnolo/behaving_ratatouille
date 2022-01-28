@@ -2,43 +2,46 @@ from enum import Enum
 
 
 class Behav(Enum):
-    HAPINESS = 0
-    SADNESS = 1
-    FEAR = 2
-    DISGUST = 3
-    ANGER = 4
-    SURPRISE = 5
-    FOCUSED = 6
-    REST = 7
-    NONE = 8
-    BOUNDARY = 9
+    WALK_FORW = 0
+    WALK_BACKW = 1
+    STAND_TWO_LEGS = 2
+    REST = 3
+    GROOM = 4
+    LEFT_TURN = 5
+    RIGHT_TURN = 6
+    NONE = 7
+    BOUNDARY = 8
     
 # keep adding stereotyped labels for supervised training
     
 # List of labels and frame intervals. Keep adding manual annotations
-label_gt_list = [([0, 140], Behav.HAPINESS, 'data_acq_jhc/CAMPAGNOLO/Experiment_datetime/EEG_recording_2021-07-06-13.21.58'),
-                 ((140, 460), Behav.SURPRISE, 'data_acq_jhc/CAMPAGNOLO/Experiment_datetime/EEG_recording_2021-07-06-13.21.58'),
-                 ((600, 750), Behav.FOCUSED, 'data_acq_jhc/CAMPAGNOLO/Experiment_datetime/EEG_recording_2021-07-06-13.21.58'),
-                 ((750, 900), Behav.HAPINESS, 'data_acq_jhc/CAMPAGNOLO/Experiment_datetime/EEG_recording_2021-07-06-13.21.58'),
+label_gt_list = [((0, 140), Behav.WALK_FORW, "KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-13"),
+                 ((140, 460), Behav.WALK_BACKW, "KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-13"),
+                 ((600, 750), Behav.STAND_TWO_LEGS, "KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-13"),
+                 ((750, 900), Behav.REST, "KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-13"),
 
-                 ([0, 140], Behav.FEAR, 'data_acq_jhc/CAMPAGNOLO/Experiment_datetime/EEG_recording_2021-07-09-17.56.03'),
-                 ((140, 500), Behav.SURPRISE, 'data_acq_jhc/CAMPAGNOLO/Experiment_datetime/EEG_recording_2021-07-09-17.56.03'),
-                 ((630, 800), Behav.ANGER, 'data_acq_jhc/CAMPAGNOLO/Experiment_datetime/EEG_recording_2021-07-09-17.56.03'),
-                 ((790, 900), Behav.HAPINESS, 'data_acq_jhc/CAMPAGNOLO/Experiment_datetime/EEG_recording_2021-07-09-17.56.03'),
+                 ((0, 140), Behav.GROOM, "KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-09"),
+                 ((140, 500), Behav.LEFT_TURN, "KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-09"),
+                 ((630, 800), Behav.RIGHT_TURN, "KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-09"),
+                 ((790, 900), Behav.BOUNDARY, "KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-09"),
 
                  ]
 
-subjects_dir = ['/Users/joaohenrique/Documents/Clusterolo/NEVARO_behavior/muse_recordings/CAMPAGNOLO',
-               '/Users/joaohenrique/Documents/Clusterolo/NEVARO_behavior/muse_recordings/RITA']
+all_dir = ["C:\\Users\\jhflc\\OneDrive\\Documentos\\Projects\\KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-13",
+           "C:\\Users\\jhflc\\OneDrive\\Documentos\\Projects\\KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-09"] #keep adding
 
 
-train_dir_single = ['/Users/joaohenrique/Documents/Clusterolo/NEVARO_behavior/muse_recordings/CAMPAGNOLO/2021_07_06/EEG_recording_2021-07-06-13.21.58.csv']
+train_dir_single = ["C:\\Users\\jhflc\\OneDrive\\Documentos\\Projects\\KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-13"]
 
-train_dir = []
+train_dir = ["C:\\Users\\jhflc\\OneDrive\\Documentos\\Projects\\KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-13"]
+
+train_names = ['375529_2021-07-25_7']
 
 val_dir = []
 
 test_dir = []
+
+mouse_tags = []
 
 train_colors = ['red', 'green', 'blue', 'orange', 'purple', 'palegreen', 'sienna', 'magenta']
 val_colors = ['yellow', 'cyan', 'crimson', 'darkgrey', 'salmon', 'olive' , 'darkcyan']

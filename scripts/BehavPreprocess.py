@@ -8,6 +8,7 @@
 
 # Import packages
 import glob
+import h5py
 import os
 import numpy as np
 import torch
@@ -18,25 +19,20 @@ import time
 import pandas as pd
 from scipy.signal import savgol_filter
 
-import headband_setup
+import skeleton
 from behav_annotation import Behav, label_gt_list
-from preprocess import filter_batch
+from preprocess import h5_to_numpy, butter_lowpass_filter
 from find_wavelets import find_wav
 from util import get_time
-
-parietal_mask = [headband_setup.is_parietal_side(i) for i in range(headband_setup.num_electrodes)]
-frontal_mask = [headband_setup.is_frontal_side(i) for i in range(headband_setup.num_electrodes)]
-right_mask = [headband_setup.is_right_side(i) for i in range(headband_setup.num_electrodes)]
-left_mask = [headband_setup.is_left_side(i) for i in range(headband_setup.num_electrodes)]
 
 INTERVAL = 0
 LABEL = 1
 
 
 class BehavPreprocess(Dataset):
-    def __init__(self, path_list, ti=0, tf=None, samp_rate=220, min_frequency=1, max_frequency=50, num_channels=30, bound_len=50, clip_len=100, smooth=True, mean_center=True, normalize=True, no_bounds=False, dump_rest=False):
+    def __init__(self, path_list, ti=0, tf=None, samp_rate=220, min_frequency=1, max_frequency=50, num_channels=30, bound_len=50, clip_len=100, smooth=True, mean_center=True, normalize=True, no_bounds=False, dump_rest=False, cut_data=False):
 
-        self.exp_path_list = path_list
+        self.root_path_list = path_list
         self.smooth = smooth
         self.mean_center = mean_center
         self.normalize = normalize
@@ -47,65 +43,67 @@ class BehavPreprocess(Dataset):
         self.samp_rate = samp_rate
         self.num_channels = num_channels
         self.clip_len = clip_len
+        self.cut_data = cut_data
+        self.ti = ti
 
-        self.exp_eeg_list = list()
-        self.smooth_exp_list = list()
-        self.wav_exp_list = list()
-        self.data_concat = list()
-        self.frame_var_list = list()
-        self.frame_amp_list = list()
+        self.exp_path_list = []
+        self.pts2d_exp_list = []
+        self.f_pts2d_exp_list = []
+        self.wav_exp_list = []
+        self.data_concat = []
+        self.frame_var_list = []
+        self.frame_amp_list = []
         
-        self.electrodes = headband_setup.electrode_names()
+        self.mouse_points = skeleton.point_names
         
         self.time_start = time.time()
         
         # Reading data
-        for exp in self.exp_path_list:
-            exp_dict = pd.read_csv(exp)
-            if tf is None:
-                tf = int(exp_dict.size/len(exp_dict.keys()))
-            else:
-                tf = min(tf,int(exp_dict.size/len(exp_dict.keys())))
-            assert tf > ti, 'tf must be greater that ti'
-            self.exp_eeg_list.append(np.zeros((len(self.electrodes),int(tf-ti))))
-            for i in range(len(self.electrodes)):
-                self.exp_eeg_list[-1][i,:] = exp_dict[self.electrodes[i]][ti:tf]
-                
+        for dir in self.root_path_list:
+            self.exp_path_list.extend(glob.glob(os.path.join(dir, ".\\videos\\*.h5"), recursive=True))
+        self.exp_path_list = [p.replace('.\\', '') for p in self.exp_path_list]
+        self.pts2d_exp_list = [h5_to_numpy(h5py.File(path,'r')) for path in self.exp_path_list]
+        print(f'Number of experiments: {np.shape(np.array(self.pts2d_exp_list))[0]}')
+        print(f'Experiments shape: {np.shape(self.pts2d_exp_list[0])}')
         print(f'Training directories: {self.exp_path_list}')
-        print("Number of experiments: {}".format(np.shape(np.array(self.exp_path_list))[0]))
-
+        
+        # Cut the dataset
+        if self.cut_data:
+            if tf is None:
+                tf = int(np.shape(self.pts2d_exp_list[0])[-1])
+            else:
+                tf = min(tf, int(np.shape(self.pts2d_exp_list[0])[-1]))
+            assert tf > ti, 'tf must be greater that ti'
+            for exp_idx, experiment in enumerate(self.pts2d_exp_list):
+                self.pts2d_exp_list[exp_idx] = experiment[:,ti:tf]
+                
         # Removing illegal values
         count = 0
-        for i in range(len(self.exp_path_list)):
-            count += np.count_nonzero(np.isnan(self.exp_eeg_list[i]))
+        for exp_idx, experiment in enumerate(self.pts2d_exp_list):
+            self.pts2d_exp_list[exp_idx][np.logical_or(np.isnan(experiment), np.isinf(experiment))] = 0
+            count += np.sum(np.logical_or(np.isnan(experiment), np.isinf(experiment)))
         print(f'Total of {count} nan or inf')
 
-        # Smoothing the dataset: idea from https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7038754/
-        # I use a Savitzky–Golay filter with the following parameters: 4th (order) and 27 (frame length)
+        # Smoothing the dataset:
+        print('Smoothing postural time-series with a low pass filter')
+        self.f_pts2d_exp_list = self.pts2d_exp_list
         if self.smooth:
-            print('Smoothing the EEG data with a Savitzky–Golay filter')
-            for i in range(len(self.exp_path_list)):
-                self.smooth_exp_list.append(np.zeros_like(self.exp_eeg_list[i]))
-                for j in range(len(self.electrodes)):
-                    self.smooth_exp_list[i][j,:] = savgol_filter(self.exp_eeg_list[i][j,:], 5, 4) 
-                    # window size 27, polynomial order 4
-        else:
-            self.smooth_exp_list = self.exp_eeg_list
+            for exp_idx, experiment in enumerate(self.f_pts2d_exp_list):
+                self.f_pts2d_exp_list[exp_idx] = [butter_lowpass_filter(experiment[i,:], fsamp=self.samp_rate) 
+                                                  for i in range(np.shape(experiment)[0])]
 
         # Mean Centering
         if self.mean_center:
-            print('Mean centering the filtered EEGs')
-            for i in range(len(self.exp_path_list)):
-                for j in range(len(self.electrodes)):
-                    self.smooth_exp_list[i][j,:] -= np.mean(self.smooth_exp_list[i][j,:])
+            for exp_idx, experiment in enumerate(self.f_pts2d_exp_list):
+                self.f_pts2d_exp_list[exp_idx] -= np.mean(self.f_pts2d_exp_list[exp_idx]) # OR meancenter_ts(experiment) w. _get.mean_
 
         # Time.frequency analysis: with Morlet continuous wavelet transform to provide a 
         # multiple time-scale representation of our postural mode dynamics. 
         # Ref: https://royalsocietypublishing.org/doi/full/10.1098/rsif.2014.0672
         print('Performing time-frequency analysis')
-        for i in range(len(self.exp_path_list)):
-            wav_exp, self.freq_channels = find_wav(np.transpose(self.smooth_exp_list[i]), 
-                                              chan=num_channels, omega0=5, fps=samp_rate, 
+        for exp_idx, experiment in enumerate(self.f_pts2d_exp_list):
+            wav_exp, self.freq_channels = find_wav(np.transpose(experiment), 
+                                                   chan=num_channels, omega0=5, fps=samp_rate, 
                                                    fmin=min_frequency, fmax=max_frequency)
             self.wav_exp_list.append(np.transpose(wav_exp))
         print(f'Wavelet center frequencies: {self.freq_channels}')
@@ -127,21 +125,21 @@ class BehavPreprocess(Dataset):
     
         # Set experiment and frame id for each instance
         self.exp_idx = [np.ones(shape=(exp.shape[1],)) * idx for (idx, exp) in
-                        enumerate(self.exp_eeg_list)]
+                        enumerate(self.pts2d_exp_list)]
         self.exp_idx = np.concatenate(self.exp_idx, axis=0).astype(np.int)
-        self.frame_idx = [np.arange(0, exp.shape[1]) for exp in self.exp_eeg_list]
+        self.frame_idx = [np.arange(0, exp.shape[-1])+self.ti for exp in self.pts2d_exp_list]
         self.frame_idx = np.concatenate(self.frame_idx, axis=0).astype(np.int)
         
         # Set the behavior for each frame
         self.data_behav_concat = [np.zeros(shape=(exp.shape[1]), dtype=np.int64) for exp in
-                                  self.exp_eeg_list]
+                                  self.pts2d_exp_list]
         
         # Setting annotated behaviors (TODO)
         for d in self.data_behav_concat:
             d[:] = Behav.NONE.value
         for exp_idx in range(len(self.data_behav_concat)):
             for offset in range(self.clip_len // 2,
-                                self.exp_eeg_list[exp_idx].shape[0] - self.clip_len // 2):
+                                self.pts2d_exp_list[exp_idx].shape[0] - self.clip_len // 2):
                 offset_mid = offset + self.clip_len // 2
                 experiment_path = self.exp_path_list[exp_idx]
                 for label_gt in label_gt_list:
@@ -197,7 +195,7 @@ class BehavPreprocess(Dataset):
         
         # Experiment dictionary
         self.preprocess_dict = {'Paths':self.exp_path_list,
-                                'Data':{'EEG_list':self.exp_eeg_list, 'Smooth_EEG_list': self.smooth_exp_list,
+                                'Data':{'2d_pose':self.pts2d_exp_list, 'filtered_pose': self.f_pts2d_exp_list,
                                         'Spect_list':self.wav_exp_list, 'Normalized_Spect_list':self.norm_wav_exp_list,
                                         'Exp_matrix':self.preprocess_data,
                                         'Frame_idx':self.frame_index, 'Experiment_idx':self.experminet_index,
