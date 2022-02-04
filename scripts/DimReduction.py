@@ -27,6 +27,7 @@ from parametric_tsne import ParametricTSNE
 from par_tsne_core import Parametric_tSNE
 from sklearn.manifold import Isomap
 import umap
+from tsne import tsne as tsne_alg
 from segmentation_tools import *
 # from umap.parametric_umap import ParametricUMAP, load_ParametricUMAP
 
@@ -34,32 +35,33 @@ from segmentation_tools import *
 class _Dim_red_alg(Enum): #move to the end
     kernel_PCA=0
     t_SNE=1
-    Par_tsne=2 #https://github.com/luke0201/parametric-tsne-keras 
-    Par_tsne2=3 #https://github.com/jsilter/parametric_tsne
-    Isomap=4
-    Umap=5
-    Par_Umap=6
-    PCA=7
+    tsne=2
+    Par_tsne=3 #https://github.com/luke0201/parametric-tsne-keras 
+    Par_tsne2=4 #https://github.com/jsilter/parametric_tsne
+    Isomap=5
+    Umap=6
+    Par_Umap=7
+    PCA=8
 
-__linear = [False, False, False, False, False, False, True] # is it linear dimensionality reduction technique
+__linear = [False, False, False, False, False, False, False, True] # is it linear dimensionality reduction technique
 __non_linear = [not elem for elem in __linear]
 
 class DimReduction():
     
-    def __init__(self, train_data, test_data, technique, embed_test=False, components=2, kpca_kernel='sigmoid',
+    def __init__(self, train_data, test_data, technique, embed_test=False, components=2, initial_dims=100, kpca_kernel='sigmoid',
                  kpca_gamma=None, kpca_kernel_degre=3, solver='auto', n_iter=1000, random_state=None, tsne_perplexity=30,
                  n_iter_without_progress=100, init='random', learning_rate=200.0, metric='euclidean', verbose=0, n_jobs=1,
                  min_grad_norm=1e-07, method='barnes_hut', angle=0.5, early_exaggeration=12.0, ismp_nn=5, ismp_toler=0,
                  ismp_path='auto', ismp_nb_alg='auto', umap_rd_st=42, umap_nn=15, umap_min_dst=0.1, umap_epochs=None, d0=10,
                  d1=100, d2=2, pumap_save_embed=False, save_embed_path=None, pumap_load_embed=False, load_embed_path=None,
                  par_tsne_alpha=1.0, par_tsne_opt='adam', part_tsne_batch_sz=64, par_tsne_seed=0, make_trainset=False,
-                 square_distances=True):
+                 square_distances=True, tsne_imoment=0.5, tsne_fmoment=0.8, tsne_eta=500, tsne_mingain=0.01, tsne_sli=100):
         
         self.train_data = train_data
         self.test_data = test_data
         self.technique = technique
         self.make_trainset = make_trainset
-        self.embed_algs = ['kernel_PCA', 't_SNE', 'Par_tsne', 'Par_tsne2', 'Isomap', 'Umap', 'Par_Umap', 'PCA']
+        self.embed_algs = ['kernel_PCA', 't_SNE', 'tsne', 'Par_tsne', 'Par_tsne2', 'Isomap', 'Umap', 'Par_Umap', 'PCA']
         
         # Parameter dictionary
         self.params = {'kernel_PCA': {'n_components':components, 'kernel':kpca_kernel, 'gamma':kpca_gamma,
@@ -72,6 +74,12 @@ class DimReduction():
                                  'min_grad_norm': min_grad_norm, 'metric':metric, #or euclidean or 'precomputed' or 'cosine'
                                  'init':init, 'verbose':verbose, 'random_state':random_state, 'method':method, 'angle':angle,
                                  'square_distances':square_distances},
+
+                       'tsne': {'train': {'no_dims':components, 'initial_dims':initial_dims, 'perplexity':tsne_perplexity,
+                                           'max_iter':n_iter, 'initial_momentum':tsne_imoment, 'final_momentum':tsne_fmoment,
+                                           'eta':tsne_eta, 'min_gain':tsne_mingain, 'early_exaggeration':early_exaggeration,
+                                           'stop_lying_iter':tsne_sli}, 
+                                'val': {}},
                        
                        'Par_tsne':{'n_components':components, 'perplexity':tsne_perplexity, 
                                    'n_iter':n_iter, 'verbose':verbose},
@@ -128,6 +136,28 @@ class DimReduction():
             self.embedding_dict['Embed_technique'] = 't_SNE'
             self.embedding_dict['Parameters'] = self.params["t_SNE"]
             self.embedding_dict['Data'] = {'Embed_data':self.data_embed}
+            
+        # tsne - original algorithm by G. Berman
+        if self.technique == _Dim_red_alg.tsne.value:
+            print(f'Performing tsne with parameters: {self.params["tsne"]}')
+            if metric == 'kld':
+                self.params['tsne']['metric'] = kld
+                # Find the KL divergence amongst the columns of the expression matrix (data)
+                N = np.shape(self.train_data)[1]
+                dist_matx = np.zeros((N,N), dtype=np.float)
+                print(f'Creating a {N}x{N} pairwise distance matrix with KL divergence')
+                for j in range(N): #cols
+                    for i in range(N): #rows
+                        dist_matx[i][j] = kld(self.train_data[:,i],self.train_data[:,j])
+                D = dist_matx / dist_matx.max()
+                self.data_embed = tsne_alg(D, **self.params['tsne']['train'])
+            if metric is None:
+                self.params['tsne']['metric'] = None
+                self.data_embed = tsne_alg(np.transpose(self.train_data), **self.params['tsne']['train'])
+            self.embedding_dict['Embed_technique'] = 'tsne'
+            self.embedding_dict['Parameters'] = self.params["tsne"]
+            self.embedding_dict['Data'] = {'Embed_data':self.data_embed}
+            
             
         # Parametric t-SNE #1 (Par_tsne)
         if self.technique == _Dim_red_alg.Par_tsne.value:

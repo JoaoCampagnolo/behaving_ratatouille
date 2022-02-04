@@ -5,6 +5,7 @@ from sklearn.metrics.pairwise import pairwise_distances
 import time
 from sklearn.manifold import TSNE
 from scipy.spatial.distance import pdist
+from scipy.sparse import csr_matrix
 import hdbscan
 import seaborn as sns
 import sklearn.cluster as cluster
@@ -18,7 +19,7 @@ def jhc_tsne(data, perplexity=32, relTol=1e-4, num_tsne_dim=2, sigmaTolerance=1e
              training_relTol=2e-3, training_perplexity=20, training_numPoints=10000, minTemplateLength=1):
     '''
     Yield training set: partition the dataset
-    Created by G. Berman and modified by João Campagnolo.
+    Created by G. Berman and adapted to python by João Campagnolo.
     '''
         
     tsne_pars = {'perplexity':perplexity, 'relTol':relTol, 'num_tsne_dim':num_tsne_dim, 'sigmaTolerance':sigmaTolerance,
@@ -32,26 +33,30 @@ def jhc_tsne(data, perplexity=32, relTol=1e-4, num_tsne_dim=2, sigmaTolerance=1e
   
     # Find the KL divergence amongst the columns of the expression matrix (data)
     N = np.shape(data)[1]
-    dist_matx = np.zeros((N,N), dtype=float)
+    dist_matx = np.zeros((N,N), dtype=np.float)
     print(f'Creating {N}x{N} pair-wise distance matrix with KL diverge')
     for j in range(N): #cols
         for i in range(N): #rows
             dist_matx[i][j] = kld(data[:,i],data[:,j])
-    dist_matx /= max(dist_matx)
+    D = dist_matx / max(dist_matx)
     
     # D2P Identifies appropriate sigma's to get kk NNs up to some tolerance 
     # see https://github.com/gordonberman/MotionMapper/blob/master/t_sne/d2p_sparse.m
-    P, betas = _d2p_sparse_(D**2, u=perplexity, tol=sigmaTolerance)
+    P, betas = _d2p_sparse_(D**2, u=tsne_pars['perplexity'], tol=tsne_pars['sigmaTolerance'])
+    P.eliminate_zeros()
 
+    # Run t-SNE
+    
     return dist_matx #FIXME
 
 
 def _get_distance_matrix_(X, metric='euclidean'):
     '''
     Compute the distance matrix from a vector array X.
-Valid values for metric are:
+    Valid values for metric are:
     *From scikit-learn: [‘cityblock’, ‘cosine’, ‘euclidean’, ‘l1’, ‘l2’, ‘manhattan’]. These metrics support sparse matrix inputs.
-    *From scipy.spatial.distance: [‘braycurtis’, ‘canberra’, ‘chebyshev’, ‘correlation’, ‘dice’, ‘hamming’, ‘jaccard’, ‘kulsinski’, ‘mahalanobis’, ‘minkowski’, ‘rogerstanimoto’, ‘russellrao’, ‘seuclidean’, ‘sokalmichener’, ‘sokalsneath’, ‘sqeuclidean’, ‘yule’].
+    *From scipy.spatial.distance: [‘braycurtis’, ‘canberra’, ‘chebyshev’, ‘correlation’, ‘dice’, ‘hamming’, ‘jaccard’, ‘kulsinski’, 
+    ‘mahalanobis’, ‘minkowski’, ‘rogerstanimoto’, ‘russellrao’, ‘seuclidean’, ‘sokalmichener’, ‘sokalsneath’, ‘sqeuclidean’, ‘yule’].
     *Precomputed (e.g. Kullback-Leibler Divergence, kld)
     '''
     time_start = time.time()
@@ -62,7 +67,7 @@ Valid values for metric are:
 def _apply_PCA_(train_data, num_components=70):
     '''
     Fit PCA to reduce dimension. This might mattern in case GMM is used. For t-SNE, it serves no purpose since t-SNE 
-conserves local structure, as oposed to PCA, which conserves global structure.
+    conserves local structure, as oposed to PCA, which conserves global structure.
     '''
     print("Applying pca")
     pca = PCA(n_components=num_components)
@@ -74,8 +79,10 @@ conserves local structure, as oposed to PCA, which conserves global structure.
 def apply_tsne(dist_matx, per=50, ee=20, lr=100, n=3500, met='precomputed'):
     '''
     Fit t-SNE to reduce dimension. 
-    NB. With t-SNE, it might be of interest to check the fitting for different parameters and metrics since the performance varies a lot from dataset to dataset.
-    The accepted metrics are those accepted by sklearn.pairwise_distances, or precomputed metrics/divergences... (such as KLD). KLD is suited to assess distances between probability distributions, unlike the Euclidian metric.
+    NB. With t-SNE, it might be of interest to check the fitting for different parameters and metrics since the performance varies a lot 
+    from dataset to dataset.
+    The accepted metrics are those accepted by sklearn.pairwise_distances, or precomputed metrics/divergences... (such as KLD). KLD is 
+    suited to assess distances between probability distributions, unlike the Euclidian metric.
     '''
     time_start = time.time()
     tsne = TSNE(n_components=2, perplexity=per, early_exaggeration=ee,
@@ -128,7 +135,10 @@ def _d2p_sparse_(D, maxNeighbors=150, u=15, tol=10^-4):
     (C) Laurens van der Maaten, 2008
     Maastricht University
 
-    Adapted to Python by João Campagnolo, 2022
+    Modified by Gordon J. Berman, 2014
+    Princeton University
+    
+    & adapted to Python by João Campagnolo, 2022
     '''
     n = np.shape(D)[1]               
     if maxNeighbors >= n:
@@ -175,7 +185,7 @@ def _d2p_sparse_(D, maxNeighbors=150, u=15, tol=10^-4):
             else:
                 betamax = beta[i]
                 if isinf(betamin):
-                    beta(i) = beta[i] / 2
+                    beta[i] = beta[i] / 2
                 else:
                     beta[i] = (beta[i] + betamin) / 2
             
@@ -190,12 +200,14 @@ def _d2p_sparse_(D, maxNeighbors=150, u=15, tol=10^-4):
     jj = jj.reshape(n*maxNeighbors,1)
     vals = vals.reshape(n*maxNeighbors,1)
     
+    P = csr_matrix((ii,jj,vals,n,n,n*maxNeighbors), dtype=np.float)
+    
     new_b = 1. / np.sqrt(beta)
     print(f'Mean value of sigma: {np.mean(new_b)}')
     print(f'Minimum value of sigma: {min(new_b)}')
     print(f'Maximum value of sigma: {max(new_b)}')
     
-    return
+    return P, betas
     
 def _Hbeta_(D, beta):
     '''
@@ -208,3 +220,72 @@ def _Hbeta_(D, beta):
     H = np.log(sumP) + beta * np.sum(np.multiply(D,P)) / sumP;
     P /= sumP
     return H, P
+
+'''
+def _tsne_p_sparse_(P, parameters, no_dims, relTol, momentum, final_momentum, mom_switch_iter,
+                    stop_lying_iter, max_iter, epsilon, min_gain, lie_multiplier, old_cost = 1e10):
+    
+    TSNE_P Performs symmetric t-SNE on affinity matrix P
+    
+      [ydata,errors] = tsne_p(P, labels, no_dims, relTol)
+    
+    The function performs symmetric t-SNE on pairwise similarity matrix P 
+    to create a low-dimensional map of no_dims dimensions (default = 2).
+    The matrix P is assumed to be symmetric, sum up to 1, and have zeros
+    on the diagonal.
+    The labels of the data are not used by t-SNE itself, however, they 
+    are used to color intermediate plots. Please provide an empty labels
+    matrix [] if you don't want to plot results during the optimization.
+    The low-dimensional data representation is returned in mappedX.
+    
+    Input variables:
+    
+           P -> NxN sparse transition probability matrix
+           parameters -> structure containing non-default parameters
+           no_dims -> number of dimensions for use in t-SNE (or an initial
+                               condition if a multi-member array)
+           relTol -> relative convergence criterium
+    
+    
+    Output variables:
+    
+           ydata -> Nx2 (or Nx3) array of embedded values
+           errors -> D_{KL}(P || Q) as a function of iteration
+    
+    
+    (C) Laurens van der Maaten, 2010
+    University of California, San Diego
+    
+    Modified by Gordon J. Berman, 2014
+    Princeton University
+    
+    & adapted to Python by João Campagnolo, 2022
+    
+    
+    # First check whether there is an initial solution
+    if np.size(no_dims) > 1:
+        initial_solution = True
+        ydata = no_dims
+        no_dims = np.shape(ydata)[1]
+    else:
+        initial_solution = False
+
+        % Initialize some variables
+    n = size(P, 1);   
+
+    # Make sure p-vals are set properly
+    n = np.shape(P)[0]
+    P(::n) = 0 # every nth row of P sets to zeros                    
+    P = 0.5 * (P + np.transpose(P))
+    idx = P > 0 #mask of positive values
+    P[idx] 
+    P[idx]/np.sum(P[idx])
+    
+    
+    idx = P > 0;
+    P(idx) = P(idx) ./ sum(P(:));        
+    idx = P > 0;
+               
+               
+    return
+'''
