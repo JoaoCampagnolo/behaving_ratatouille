@@ -9,14 +9,18 @@ class Behav(Enum):
     GROOM = 4
     LEFT_TURN = 5
     RIGHT_TURN = 6
-    NONE = 7
-    BOUNDARY = 8
+    PRESS_BTN = 7
+    COLLECT_RWD = 8
+    NONE = 9
+    BOUNDARY = 10
     
 # keep adding stereotyped labels for supervised training
     
 # List of labels and frame intervals. Keep adding manual annotations
-label_gt_list = [((0, 140), Behav.WALK_FORW, "KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-13"),
-                 ((140, 460), Behav.WALK_BACKW, "KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-13"),
+label_gt_list = [((0, 140), Behav.PRESS_BTN, "KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-13"),
+                 ((0, 140), Behav.COLLECT_RWD, "KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-13"),
+                 
+                 ((140, 460), Behav.COLLECT_RWD , "KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-13"),
                  ((600, 750), Behav.STAND_TWO_LEGS, "KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-13"),
                  ((750, 900), Behav.REST, "KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-13"),
 
@@ -34,6 +38,9 @@ all_dir = ["C:\\Users\\jhflc\\OneDrive\\Documentos\\Projects\\KI_article\\script
 train_dir_single = ["C:\\Users\\jhflc\\OneDrive\\Documentos\\Projects\\KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-13"]
 
 train_dir = ["C:\\Users\\jhflc\\OneDrive\\Documentos\\Projects\\KI_article\\scripts\\POSE-JoaoCampagnolo-2021-12-13"]
+
+dlc_live = ["C:\\Users\\olimp\\Documents\\ki_paper\\data\\375529_7",
+            "C:\\Users\\olimp\\Documents\\ki_paper\\data\\375530_7"]
 
 train_names = ['375529_2021-07-25_7']
 
