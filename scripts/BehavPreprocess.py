@@ -93,6 +93,8 @@ class BehavPreprocess(Dataset):
                 self.val_mask_exp_list[exp_idx] = experiment[self.ti[exp_idx]:self.tf[exp_idx]]
             for exp_idx, experiment in enumerate(self.train_mask_exp_list):
                 self.train_mask_exp_list[exp_idx] = experiment[self.ti[exp_idx]:self.tf[exp_idx]]
+        else:
+            self.ti = [0]*len(self.exp_path_list)
                 
         # Removing illegal values
         count = 0
@@ -169,30 +171,30 @@ class BehavPreprocess(Dataset):
         
         # Setting the boundary frames
         self.test_boundary_mask = []
-        for exp_idx, experiment in enumerate(self.exp_path_list):
-            boundary_mask = np.zeros(len(self.frame_amp_list[exp_idx]))
-            boundary_mask[:bound_len] = 1; boundary_mask[-bound_len:] = 1
-            bound_mask = boundary_mask > 0
-            self.test_boundary_mask.append(bound_mask)
-            self.data_behav_concat[exp_idx][bound_mask] = Behav.BOUNDARY.value
+        if self.no_bounds:
+            for exp_idx, experiment in enumerate(self.exp_path_list):
+                boundary_mask = np.zeros(len(self.frame_amp_list[exp_idx]))
+                boundary_mask[:bound_len] = 1; boundary_mask[-bound_len:] = 1
+                bound_mask = boundary_mask > 0
+                self.test_boundary_mask.append(bound_mask)
+                self.data_behav_concat[exp_idx][bound_mask] = Behav.BOUNDARY.value
             
         # Setting the validation mask 
-        for exp_idx, experiment in enumerate(self.val_mask_exp_list):
-            val_mask = experiment
-            self.data_behav_concat[exp_idx][val_mask] = Behav.PRESS_BTN.value 
+        for exp_idx, mask in enumerate(self.val_mask_exp_list):
+            self.data_behav_concat[exp_idx][mask] = Behav.PRESS_BTN.value 
             
         # Setting the train mask 
-        for exp_idx, experiment in enumerate(self.train_mask_exp_list):
-            train_mask = experiment
-            self.data_behav_concat[exp_idx][train_mask] = Behav.COLLECT_RWD.value
+        for exp_idx, mask in enumerate(self.train_mask_exp_list):
+            self.data_behav_concat[exp_idx][mask] = Behav.COLLECT_RWD.value
             
         # Setting the rest frames
         self.test_rest_mask = []
-        for exp_idx, experiment in enumerate(self.exp_path_list):
-            thr = filters.threshold_otsu(self.frame_amp_list[exp_idx], nbins=len(experiment) // 2) #use amplitude or variance?
-            rest_mask = self.frame_amp_list[exp_idx] < thr
-            self.test_rest_mask.append(rest_mask)
-            self.data_behav_concat[exp_idx][rest_mask] = Behav.REST.value # This overwrites the previous masks. Use w. caution.
+        if dump_rest:
+            for exp_idx, experiment in enumerate(self.exp_path_list):
+                thr = filters.threshold_otsu(self.frame_amp_list[exp_idx], nbins=len(experiment) // 2) #use amplitude or variance?
+                rest_mask = self.frame_amp_list[exp_idx] < thr
+                self.test_rest_mask.append(rest_mask)
+                self.data_behav_concat[exp_idx][rest_mask] = Behav.REST.value # This overwrites the previous masks. Use w. caution.
             
         # Concatenate the data
         self.data_concat = np.concatenate(self.norm_wav_exp_list, axis=1) # shape=(n_freq_channels,n_frames)
@@ -221,6 +223,8 @@ class BehavPreprocess(Dataset):
         self.val_data = self.data_concat[:, self.val_data_mask]
         self.val_data[np.logical_or(np.isnan(self.val_data), np.isinf(self.val_data))] = 0
         print(f'Preprocessed masked data shape: {np.shape(self.preprocess_data)}')
+        print(f'Train masked data shape: {np.shape(self.train_data)}')
+        print(f'Validation masked data shape: {np.shape(self.val_data)}')
         self.frame_index = self.frame_idx[self.data_mask] 
         self.experminet_index = self.exp_idx[self.data_mask]
         self.frame_amplitudes = np.concatenate(self.frame_amp_list, axis=0)[self.data_mask]
